@@ -1,0 +1,9 @@
+name = "simulateur-credit-jirama"
+compatibility_date = "2026-07-31"
+
+routes = [
+  { pattern = "credit-jirama.jerwy.com", custom_domain = true }
+]
+
+[assets]
+directory = "."
