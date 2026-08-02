@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="description" content="Simulateur pédagogique de crédit prépayé JIRAMA avec tranches mensuelles, charges fixes et taxes." />
+  <title>Simulateur crédit JIRAMA</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Accueil du simulateur">
+        <span>
+          <strong>Crédit JIRAMA</strong>
+          <small>Simulation prépayée</small>
+        </span>
+      </a>
+      <button class="icon-button" id="themeToggle" type="button" aria-label="Changer le thème" title="Changer le thème">
+        <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V2m0 20v-2M4 12H2m20 0h-2M5.64 5.64 4.22 4.22m15.56 15.56-1.42-1.42m0-12.72 1.42-1.42M4.22 19.78l1.42-1.42M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/></svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+      </button>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="pageTitle">
+        <span class="eyebrow">Estimation mensuelle</span>
+        <h1 id="pageTitle">Simuler un achat de crédit JIRAMA.</h1>
+        <p>Le calcul tient compte des tranches déjà consommées dans le mois, des charges mensuelles et de la TVA estimée.</p>
+      </section>
+
+      <section class="simulator-grid">
+        <article class="card purchase-card">
+          <div class="segmented-control" role="tablist" aria-label="Mode de calcul">
+            <button class="segment is-active" type="button" role="tab" aria-selected="true" data-mode="kwh">Par kWh</button>
+            <button class="segment" type="button" role="tab" aria-selected="false" data-mode="price">Par prix</button>
+          </div>
+
+          <form id="purchaseForm" novalidate>
+            <div class="two-columns">
+              <div class="field-group">
+                <label for="meterNumber">Numéro de compteur</label>
+                <div class="input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h3m2 0h3M8 16h3m2 0h3"/></svg>
+                  <input id="meterNumber" type="text" inputmode="numeric" maxlength="16" placeholder="Ex. 0200000000000" />
+                </div>
+                <p class="field-error" id="meterError" aria-live="polite"></p>
+              </div>
+
+              <div class="field-group">
+                <label for="purchaseDate">Date d’achat</label>
+                <input class="plain-input" id="purchaseDate" type="date" />
+                <p class="field-help" id="monthLabel">Mois tarifaire en cours</p>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="label-row">
+                <label id="amountLabel" for="amountInput">Quantité souhaitée</label>
+                <span id="rangeHint">1 à 1 000 kWh</span>
+              </div>
+              <div class="amount-input">
+                <input id="amountInput" type="number" inputmode="decimal" min="1" max="1000" step="1" value="50" aria-describedby="amountHelp amountError" />
+                <span id="amountUnit">kWh</span>
+              </div>
+              <p class="field-help" id="amountHelp">La quantité est ventilée dans les tranches restantes du mois.</p>
+              <p class="field-error" id="amountError" aria-live="polite"></p>
+            </div>
+
+            <div class="quick-values" id="quickValues" aria-label="Valeurs rapides"></div>
+
+            <details class="account-context" open>
+              <summary>Situation du compte et du mois</summary>
+              <div class="context-grid">
+                <div class="field-group compact-field">
+                  <label for="priorKwh">Déjà acheté ce mois</label>
+                  <div class="suffix-input">
+                    <input id="priorKwh" type="number" min="0" max="5000" step="0.01" value="0" />
+                    <span>kWh</span>
+                  </div>
+                  <button class="inline-button" id="inferHistory" type="button">Calculer depuis l’historique</button>
+                </div>
+
+                <div class="field-group compact-field">
+                  <label for="subscribedPower">Puissance souscrite</label>
+                  <div class="suffix-input">
+                    <input id="subscribedPower" type="number" min="0" max="100" step="0.1" value="3.3" />
+                    <span>kW</span>
+                  </div>
+                  <p class="field-help">Valeur utilisée pour l'estimation : 3,3 kW.</p>
+                </div>
+
+                <div class="field-group compact-field full-row">
+                  <label class="check-row" for="chargesAlreadyPaid">
+                    <input id="chargesAlreadyPaid" type="checkbox" />
+                    <span>Prime fixe et redevance déjà réglées ce mois</span>
+                  </label>
+                  <p class="field-help" id="chargesHelp">À cocher uniquement si elles ont été payées sans achat de kWh.</p>
+                </div>
+
+                <div class="field-group compact-field full-row">
+                  <label for="arrears">Arriéré / régularisation prélevé sur cet achat</label>
+                  <div class="suffix-input">
+                    <input id="arrears" type="number" min="0" max="5000000" step="0.01" value="0" />
+                    <span>Ar</span>
+                  </div>
+                  <p class="field-help">Saisissez le montant communiqué par JIRAMA. Il est ajouté directement à cette estimation.</p>
+                </div>
+
+              </div>
+            </details>
+
+            <button class="primary-button" type="submit">
+              <span>Simuler l’achat</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </form>
+
+          <div class="notice" role="note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg>
+            <p><strong>Simulation non officielle.</strong> Les tarifs résidentiels sont documentés, tandis que la TVA et un éventuel arriéré restent des estimations.</p>
+          </div>
+        </article>
+
+        <aside class="card summary-card" aria-live="polite">
+          <div class="summary-heading">
+            <div>
+              <span class="eyebrow">Votre estimation</span>
+              <h2 id="summaryTitle">50 kWh</h2>
+              <small id="monthlyPosition">Position mensuelle : 0 → 50 kWh</small>
+            </div>
+            <span class="status-pill">Prépayé</span>
+          </div>
+
+          <div class="total-panel">
+            <span>Montant total estimé</span>
+            <strong id="totalAmount">36 871,90 Ar</strong>
+            <small id="budgetRemainder" hidden></small>
+          </div>
+
+          <dl class="breakdown">
+            <div><dt>Énergie achetée</dt><dd id="energyValue">50 kWh</dd></div>
+            <div><dt>Montant consommation</dt><dd id="consumptionValue">17 000,00 Ar</dd></div>
+            <div><dt>Prime fixe mensuelle</dt><dd id="fixedValue">9 959,40 Ar</dd></div>
+            <div><dt>Redevance mensuelle</dt><dd id="feeValue">8 000,00 Ar</dd></div>
+            <div><dt>Taxes locales + FNE</dt><dd id="localTaxValue">1 912,50 Ar</dd></div>
+            <div><dt>TVA estimée</dt><dd id="vatValue">0,00 Ar</dd></div>
+            <div><dt>Arriéré / régularisation</dt><dd id="arrearsValue">0,00 Ar</dd></div>
+          </dl>
+
+          <details class="tax-details" open>
+            <summary>Répartition par tranche</summary>
+            <dl>
+              <div><dt id="band1Label">T1 · 0 à 130 kWh · 340 Ar</dt><dd id="band1Value">50 kWh · 17 000,00 Ar</dd></div>
+              <div><dt id="band2Label">T2 · 130 à 300 kWh · 560 Ar</dt><dd id="band2Value">0 kWh · 0,00 Ar</dd></div>
+              <div><dt id="band3Label">T3 · au-delà de 300 kWh · 764 Ar</dt><dd id="band3Value">0 kWh · 0,00 Ar</dd></div>
+            </dl>
+          </details>
+
+          <details class="tax-details">
+            <summary>Détail des taxes</summary>
+            <dl>
+              <div><dt>Taxe communale · 6 %</dt><dd id="communalTax">1 020,00 Ar</dd></div>
+              <div><dt>Surtaxe communale · 4 %</dt><dd id="surtax">680,00 Ar</dd></div>
+              <div><dt>FNE · 1,25 %</dt><dd id="fneTax">212,50 Ar</dd></div>
+              <div><dt>TVA estimée · 20 %</dt><dd id="vatTax">0,00 Ar</dd></div>
+            </dl>
+          </details>
+
+          <div class="formula-note">
+            <strong>Logique mensuelle</strong>
+            <span>Les tranches repartent de zéro au changement de mois. La prime fixe et la redevance ne sont ajoutées qu’une fois.</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="history-section" aria-labelledby="historyTitle">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Stockage local</span>
+            <h2 id="historyTitle">Dernières simulations</h2>
+          </div>
+          <button class="text-button" id="clearHistory" type="button" hidden>Effacer</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+    </main>
+
+    <footer><p>Prototype pédagogique • Aucun paiement réel n’est effectué.</p></footer>
+  </div>
+
+  <dialog class="receipt-dialog" id="receiptDialog">
+    <div class="receipt-card">
+      <button class="dialog-close" id="closeDialog" type="button" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="success-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/></svg></div>
+      <span class="eyebrow">Simulation terminée</span>
+      <h2>Jeton fictif généré</h2>
+      <p>Ce code sert uniquement à démontrer le parcours d’achat.</p>
+
+      <div class="token-box">
+        <span>Jeton</span>
+        <strong id="tokenValue">0000 0000 0000 0000 0000</strong>
+        <button id="copyToken" type="button">Copier</button>
+      </div>
+
+      <dl class="receipt-summary">
+        <div><dt>Compteur</dt><dd id="receiptMeter">—</dd></div>
+        <div><dt>Date</dt><dd id="receiptDate">—</dd></div>
+        <div><dt>Quantité</dt><dd id="receiptEnergy">—</dd></div>
+        <div><dt>Montant</dt><dd id="receiptTotal">—</dd></div>
+      </dl>
+
+      <button class="primary-button" id="newSimulation" type="button">Nouvelle simulation</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

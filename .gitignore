@@ -1,0 +1,11 @@
+# Temporary & Cache files
+.DS_Store
+Thumbs.db
+*.log
+.temp/
+scratch/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
